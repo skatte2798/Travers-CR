@@ -17,7 +17,7 @@ def generate_pdf(transcription, analysis):
     font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
     
     pdf.add_font("DejaVu", "", font_path, uni=True)
-    pdf.set_font("DejaVu", "B", 18)
+    pdf.set_font("DejaVu", "", 18)
 
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
     pdf.ln(10)
