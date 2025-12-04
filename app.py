@@ -238,7 +238,7 @@ if uploaded_file is not None:
         )
 
         # Cleanup
-        for p in [video_path, audio_path]:
+        for p in [video_path]:
             if os.path.exists(p):
                 os.unlink(p)
 
