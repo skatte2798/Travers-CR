@@ -13,13 +13,17 @@ def sanitize_text(text):
 def generate_pdf(transcription, analysis):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 18)
+    
+    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+    pdf.set_font("DejaVu", "B", 18)
+
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
     pdf.ln(10)
-    pdf.set_font("Helvetica", size=11)
     
-    transcription_safe = sanitize_text(transcription)
-    analysis_safe = sanitize_text(analysis)
+    pdf.set_font("DejaVu", "", 11)
+    
+    #transcription_safe = sanitize_text(transcription)
+    #analysis_safe = sanitize_text(analysis)
 
     
     pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription}\n\n\nAI Analysis:\n\n{analysis}")
