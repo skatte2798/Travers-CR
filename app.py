@@ -1,6 +1,5 @@
 import streamlit as st
 import openai
-import ffmpeg
 import os
 import tempfile
 from fpdf import FPDF
