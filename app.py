@@ -158,24 +158,10 @@ if uploaded_file is not None:
             video_path = tmp.name
 
         # ===============================
-        # Extract audio using ffmpeg
-        # ===============================
-        with st.spinner("Extracting audio..."):
-            audio_path = video_path + ".wav"
-
-            (
-                ffmpeg
-                .input(video_path)
-                .output(audio_path, format='wav', acodec='pcm_s16le', ac=1, ar='16000')
-                .overwrite_output()
-                .run(quiet=True)
-            )
-
-        # ===============================
         # Transcribe using Whisper API
         # ===============================
         with st.spinner("Transcribing with Whisper API..."):
-            with open(audio_path, "rb") as audio_file:
+            with open(video_path, "rb") as audio_file:
                 transcription_response = openai.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file
