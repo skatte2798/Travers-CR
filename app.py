@@ -13,8 +13,10 @@ def sanitize_text(text):
 def generate_pdf(transcription, analysis):
     pdf = FPDF()
     pdf.add_page()
+
+    font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
     
-    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+    pdf.add_font("DejaVu", "", font_path, uni=True)
     pdf.set_font("DejaVu", "B", 18)
 
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
