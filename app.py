@@ -7,31 +7,30 @@ from fpdf import FPDF
 # ========================= CONFIG =========================
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-def sanitize_text(text):
-    return text.encode("latin1", errors="replace").decode("latin1")
-
 def generate_pdf(transcription, analysis):
     pdf = FPDF()
     pdf.add_page()
 
     font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
     pdf.add_font("DejaVu", "", font_path, uni=True)
-    
+
     pdf.set_font("DejaVu", "", 18)
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
     pdf.ln(10)
     
     pdf.set_font("DejaVu", "", 11)
     
-    # Use sanitized text
-    transcription_safe = sanitize_text(transcription)
-    analysis_safe = sanitize_text(analysis)
+    # Sanitize text to avoid unsupported characters
+    transcription_safe = transcription.encode("latin1", errors="replace").decode("latin1")
+    analysis_safe = analysis.encode("latin1", errors="replace").decode("latin1")
     
     pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription_safe}\n\n\nAI Analysis:\n\n{analysis_safe}")
     
-    # Return bytes directly (fpdf2 v2.8.5)
-    pdf_bytes = pdf.output(dest="S")
-    return pdf_bytes
+    # Write PDF to a BytesIO buffer
+    pdf_buffer = BytesIO()
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
+    return pdf_buffer  # return a file-like object
 
 
 # ========================= CSS =========================
