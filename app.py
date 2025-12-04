@@ -15,21 +15,22 @@ def generate_pdf(transcription, analysis):
     pdf.add_page()
 
     font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
-    
     pdf.add_font("DejaVu", "", font_path, uni=True)
+    
     pdf.set_font("DejaVu", "", 18)
-
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
     pdf.ln(10)
     
     pdf.set_font("DejaVu", "", 11)
     
-    #transcription_safe = sanitize_text(transcription)
-    #analysis_safe = sanitize_text(analysis)
-
+    # Use sanitized text
+    transcription_safe = sanitize_text(transcription)
+    analysis_safe = sanitize_text(analysis)
     
-    pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription}\n\n\nAI Analysis:\n\n{analysis}")
-    pdf_bytes = pdf.output(dest="S").encode("latin1", errors="replace")
+    pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription_safe}\n\n\nAI Analysis:\n\n{analysis_safe}")
+    
+    # Return bytes directly (fpdf2 v2.8.5)
+    pdf_bytes = pdf.output(dest="S")
     return pdf_bytes
 
 
