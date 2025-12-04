@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import tempfile
+from io import BytesIO
 from fpdf import FPDF
 
 # ========================= CONFIG =========================
