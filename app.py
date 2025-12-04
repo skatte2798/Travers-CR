@@ -1,6 +1,6 @@
 import streamlit as st
 import openai
-import imageio_ffmpeg
+import ffmpeg
 import os
 import tempfile
 from fpdf import FPDF
