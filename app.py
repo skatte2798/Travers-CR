@@ -1,5 +1,4 @@
 import streamlit as st
-import whisper
 import openai
 from moviepy.editor import AudioFileClip
 import os
@@ -9,11 +8,6 @@ from fpdf import FPDF
 # ========================= CONFIG =========================
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-@st.cache_resource
-def load_whisper_model():
-    return whisper.load_model("small")
-
-model = load_whisper_model()
 
 def generate_pdf(transcription, analysis):
     pdf = FPDF()
@@ -25,15 +19,16 @@ def generate_pdf(transcription, analysis):
     pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription}\n\n\nAI Analysis:\n\n{analysis}")
     return pdf.output(dest="S").encode("latin1")
 
-# ========================= CSS (UPDATED & POLISHED) =========================
+
+# ========================= CSS =========================
 st.markdown("""
 <style>
     /* Thin black top bar */
     .topbar {
-        background:#000; 
-        height:6px; 
-        position:fixed; 
-        top:0; left:0; right:0; 
+        background:#000;
+        height:6px;
+        position:fixed;
+        top:0; left:0; right:0;
         z-index:9999;
     }
 
@@ -44,10 +39,10 @@ st.markdown("""
     }
 
     .sidebar-title {
-        color:#00d4ff; 
-        font-size:2rem; 
-        font-weight:700; 
-        text-align:center; 
+        color:#00d4ff;
+        font-size:2rem;
+        font-weight:700;
+        text-align:center;
         margin-bottom:1rem;
         line-height:1.3;
     }
@@ -78,11 +73,11 @@ st.markdown("""
 
     /* Main page */
     .main > div {
-        background:#f8f9fc; 
+        background:#f8f9fc;
         padding-top:5rem !important;
     }
     .block-container {
-        max-width:900px; 
+        max-width:900px;
         padding:2rem;
     }
 
@@ -92,30 +87,19 @@ st.markdown("""
         margin-bottom:1rem;
     }
 
-    /* Feature pills */
     .pill {
-        background:white; 
-        padding:1rem 2rem; 
-        border-radius:50px; 
+        background:white;
+        padding:1rem 2rem;
+        border-radius:50px;
         text-align:center;
-        box-shadow:0 4px 15px rgba(0,0,0,0.05); 
-        font-size:0.95rem; 
+        box-shadow:0 4px 15px rgba(0,0,0,0.05);
+        font-size:0.95rem;
         color:#555;
-    }
-
-    /* File uploader */
-    .stFileUploader {
-        border:2px dashed #ccc; 
-        border-radius:20px; 
-        padding:3rem !important;
-    }
-    .stFileUploader > div > div {
-        background:transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Thin top bar
+# Top bar
 st.markdown('<div class="topbar"></div>', unsafe_allow_html=True)
 
 # ========================= SIDEBAR =========================
@@ -154,55 +138,73 @@ st.markdown("""
 
 uploaded_file = st.file_uploader("", type=["mp4", "mov", "wav", "m4a"])
 
-# ========================= PROCESSING LOGIC =========================
+# ========================= PROCESS LOGIC =========================
 if uploaded_file is not None:
-    col1, col2 = st.columns([2,1])
+    # Show name + video
+    col1, col2 = st.columns([2, 1])
     with col1:
         st.markdown(f"<p style='text-align:center; color:#4a90e2; font-weight:bold;'>{uploaded_file.name}</p>", unsafe_allow_html=True)
     with col2:
         st.video(uploaded_file)
 
     if st.button("Analyze Call Recording", type="primary", use_container_width=True):
+
+        # Temp video file
         with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
             tmp.write(uploaded_file.getvalue())
             video_path = tmp.name
 
+        # Extract audio
         with st.spinner("Extracting audio..."):
-            audio = AudioFileClip(video_path)
-            wav_path = video_path + ".wav"
-            audio.write_audiofile(wav_path, codec="pcm_s16le", verbose=False, logger=None)
+            audio_clip = AudioFileClip(video_path)
+            audio_path = video_path + ".wav"
+            audio_clip.write_audiofile(audio_path, codec="pcm_s16le", verbose=False, logger=None)
 
-        with st.spinner("Transcribing with Whisper AI..."):
-            result = model.transcribe(wav_path)
-            transcription = result["text"]
+        # Transcribe
+        with st.spinner("Transcribing with Whisper API..."):
+            audio_file = open(audio_path, "rb")
+            try:
+                transcription_response = openai.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file
+                )
+                if hasattr(transcription_response, "text"):
+                    transcription = transcription_response.text
+                elif isinstance(transcription_response, dict):
+                    transcription = transcription_response.get("text", "")
+                else:
+                    transcription = str(transcription_response)
+            finally:
+                audio_file.close()
 
         st.success("Transcription Complete")
-        with st.expander("View Full Transcription", expanded=False):
+        with st.expander("View Full Transcription"):
             st.write(transcription)
 
+        # Evaluation
         with st.spinner("Running AI Quality Evaluation..."):
             response = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are an expert call-center quality auditor. Be professional, objective, and provide structured feedback with scores 1–10."},
+                    {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scores and feedback."},
                     {"role": "user", "content": f"""
-                        Evaluate this call on these criteria (1–10 each):
-                        1. Greeting & Professionalism
-                        2. Active Listening
-                        3. Accuracy & Product Knowledge
-                        4. Problem Resolution
-                        5. Empathy & Tone
-                        6. Call Control & Efficiency
+                    Evaluate this call on these criteria (1–10 each):
+                    1. Greeting & Professionalism
+                    2. Active Listening
+                    3. Accuracy & Product Knowledge
+                    4. Problem Resolution
+                    5. Empathy & Tone
+                    6. Call Control & Efficiency
 
-                        Then provide:
-                        • What went well
-                        • Areas for improvement
-                        • Coaching tips
-                        • Overall score (1–10)
+                    Include:
+                    - What went well
+                    - Areas for improvement
+                    - Coaching tips
+                    - Overall score
 
-                        Transcription:
-                        {transcription}
-                        """}
+                    Transcription:
+                    {transcription}
+                    """}
                 ],
                 temperature=0.4
             )
@@ -211,6 +213,7 @@ if uploaded_file is not None:
         st.markdown("## AI Quality Analysis")
         st.markdown(analysis)
 
+        # PDF Download
         pdf = generate_pdf(transcription, analysis)
         st.download_button(
             label="Download Full Report (PDF)",
@@ -220,7 +223,8 @@ if uploaded_file is not None:
             use_container_width=True
         )
 
-        for p in [video_path, wav_path]:
+        # Cleanup
+        for p in [video_path, audio_path]:
             if os.path.exists(p):
                 os.unlink(p)
 
@@ -235,7 +239,7 @@ else:
 
 # ========================= FEATURE PILLS =========================
 st.markdown("<br><br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1,1,1])
+col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
     st.markdown('<div class="pill"><strong>99% Accuracy</strong><br><small>Whisper AI transcription</small></div>', unsafe_allow_html=True)
