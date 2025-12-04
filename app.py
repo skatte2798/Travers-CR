@@ -7,6 +7,8 @@ from fpdf import FPDF
 # ========================= CONFIG =========================
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
+def sanitize_text(text):
+    return text.encode("latin1", errors="replace").decode("latin1")
 
 def generate_pdf(transcription, analysis):
     pdf = FPDF()
@@ -15,8 +17,13 @@ def generate_pdf(transcription, analysis):
     pdf.cell(0, 15, "Call Quality Report", ln=1, align="C")
     pdf.ln(10)
     pdf.set_font("Helvetica", size=11)
+    
+    transcription_safe = sanitize_text(transcription)
+    analysis_safe = sanitize_text(analysis)
+
+    
     pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription}\n\n\nAI Analysis:\n\n{analysis}")
-    return pdf.output(dest="S").encode("utf-8")
+    return pdf.output(dest="S").encode("latin1")
 
 
 # ========================= CSS =========================
