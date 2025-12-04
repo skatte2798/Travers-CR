@@ -1,0 +1,4 @@
+streamlit
+openai==2.8.1
+moviepy
+fpdf
