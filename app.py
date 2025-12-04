@@ -2,8 +2,6 @@ import streamlit as st
 import openai
 import imageio_ffmpeg
 import os
-os.environ["IMAGEIO_FFMPEG_EXE"] = imageio_ffmpeg.get_ffmpeg_exe()
-from moviepy.editor import AudioFileClip
 import tempfile
 from fpdf import FPDF
 
@@ -145,7 +143,10 @@ if uploaded_file is not None:
     # Show name + video
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.markdown(f"<p style='text-align:center; color:#4a90e2; font-weight:bold;'>{uploaded_file.name}</p>", unsafe_allow_html=True)
+        st.markdown(
+            f"<p style='text-align:center; color:#4a90e2; font-weight:bold;'>{uploaded_file.name}</p>",
+            unsafe_allow_html=True
+        )
     with col2:
         st.video(uploaded_file)
 
@@ -156,56 +157,67 @@ if uploaded_file is not None:
             tmp.write(uploaded_file.getvalue())
             video_path = tmp.name
 
-        # Extract audio
+        # ===============================
+        # Extract audio using ffmpeg
+        # ===============================
         with st.spinner("Extracting audio..."):
-            audio_clip = AudioFileClip(video_path)
             audio_path = video_path + ".wav"
-            audio_clip.write_audiofile(audio_path, codec="pcm_s16le", verbose=False, logger=None)
 
-        # Transcribe
+            (
+                ffmpeg
+                .input(video_path)
+                .output(audio_path, format='wav', acodec='pcm_s16le', ac=1, ar='16000')
+                .overwrite_output()
+                .run(quiet=True)
+            )
+
+        # ===============================
+        # Transcribe using Whisper API
+        # ===============================
         with st.spinner("Transcribing with Whisper API..."):
-            audio_file = open(audio_path, "rb")
-            try:
+            with open(audio_path, "rb") as audio_file:
                 transcription_response = openai.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file
                 )
-                if hasattr(transcription_response, "text"):
-                    transcription = transcription_response.text
-                elif isinstance(transcription_response, dict):
-                    transcription = transcription_response.get("text", "")
-                else:
-                    transcription = str(transcription_response)
-            finally:
-                audio_file.close()
+
+            # Handle OpenAI object response safely
+            if hasattr(transcription_response, "text"):
+                transcription = transcription_response.text
+            elif isinstance(transcription_response, dict):
+                transcription = transcription_response.get("text", "")
+            else:
+                transcription = str(transcription_response)
 
         st.success("Transcription Complete")
         with st.expander("View Full Transcription"):
             st.write(transcription)
 
-        # Evaluation
+        # ===============================
+        # Evaluation using GPT
+        # ===============================
         with st.spinner("Running AI Quality Evaluation..."):
             response = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scores and feedback."},
                     {"role": "user", "content": f"""
-                    Evaluate this call on these criteria (1–10 each):
-                    1. Greeting & Professionalism
-                    2. Active Listening
-                    3. Accuracy & Product Knowledge
-                    4. Problem Resolution
-                    5. Empathy & Tone
-                    6. Call Control & Efficiency
+                        Evaluate this call on these criteria (1–10 each):
+                        1. Greeting & Professionalism
+                        2. Active Listening
+                        3. Accuracy & Product Knowledge
+                        4. Problem Resolution
+                        5. Empathy & Tone
+                        6. Call Control & Efficiency
 
-                    Include:
-                    - What went well
-                    - Areas for improvement
-                    - Coaching tips
-                    - Overall score
+                        Include:
+                        - What went well
+                        - Areas for improvement
+                        - Coaching tips
+                        - Overall score
 
-                    Transcription:
-                    {transcription}
+                        Transcription:
+                        {transcription}
                     """}
                 ],
                 temperature=0.4
