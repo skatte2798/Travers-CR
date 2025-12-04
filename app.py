@@ -29,7 +29,8 @@ def generate_pdf(transcription, analysis):
 
     
     pdf.multi_cell(0, 7, f"Transcription:\n\n{transcription}\n\n\nAI Analysis:\n\n{analysis}")
-    return pdf.output(dest="S")
+    pdf_bytes = pdf.output(dest="S").encode("latin1", errors="replace")
+    return pdf_bytes
 
 
 # ========================= CSS =========================
