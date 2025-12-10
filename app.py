@@ -200,24 +200,89 @@ if uploaded_file is not None:
             response = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scores and feedback."},
+                    {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scoring, analysis, and coaching.If a criterion does not apply to the call, intelligently adjust scoring and note “Not Applicable.”  Be objective, concise, and professional."},
                     {"role": "user", "content": f"""
-                        Evaluate this call on these criteria (1–10 each):
-                        1. Greeting & Professionalism
-                        2. Active Listening
-                        3. Accuracy & Product Knowledge
-                        4. Problem Resolution
-                        5. Empathy & Tone
-                        6. Call Control & Efficiency
+                            Evaluate this call using the following criteria (score each 1–10 unless Not Applicable).  
+                            For each section, include:
+                                - Score
+                                - What went well
+                                - Areas for improvement
+                                - Coaching tips
 
-                        Include:
-                        - What went well
-                        - Areas for improvement
-                        - Coaching tips
-                        - Overall score
+                            After evaluating all categories, include:
+                                - Overall summary
+                                - Overall score (average of applicable categories)
+
+                            Evaluation Criteria:
+
+                            1. Greeting & Professionalism  
+                            Did the rep:  
+                                • Thank the customer for calling Travers  
+                                • Identify themselves  
+                                • Sound friendly, sincere, and professional  
+                                • Speak clearly with no background noise  
+                                • Attempt rapport/connection when appropriate  
+
+                            2. Call Purpose Identification  
+                            Did the rep:  
+                                • Identify the reason for the call  
+                                • Clarify the customer’s needs  
+                                • Ask probing questions when needed  
+
+                            3. Verification & Account Accuracy  
+                            Did the rep:  
+                                • Verify account name/number  
+                                • Verify contact name, phone, and email  
+                                • Update incorrect info (spoken updates only)  
+                                • Ask for/confirm ship-to address if needed  
+
+                            4. Order Entry Accuracy (Items, Pricing, Flyers, Promotions)  
+                            Did the rep:  
+                                • Ask for PO#  
+                                • Ask if ordering from flyer; offer brochures  
+                                • Request key code if applicable  
+                                • Confirm description, quantity, and price of items  
+                                • Offer substitutes/vendor availability when needed  
+                                • Offer price-break quantities  
+
+                            5. Accuracy & Product Knowledge  
+                            Did the rep:  
+                                • Provide accurate information  
+                                • Confirm ship-via  
+                                • Provide total with tax & shipping  
+                                • Provide transit time (as estimate)  
+                                • Provide OE# or offer email confirmation  
+
+                            6. Empathy & Tone  
+                                Score tone, patience, warmth, empathy, and emotional intelligence.
+
+                            7. Call Control & Efficiency  
+                            Did the rep:  
+                                • Avoid unnecessary holds or long silences  
+                                • Follow correct hold/transfer procedures  
+                                • Manage the call efficiently  
+
+                            8. Active Listening  
+                            Did the rep:  
+                                • Avoid interrupting  
+                                • Demonstrate understanding  
+                                • Respond appropriately  
+
+                            9. Problem Resolution  
+                            Did the rep:  
+                                • Fully resolve or progress the customer’s request  
+                                • Go above and beyond when appropriate  
+                                • Provide complete and correct answers  
+
+                            10. Closing & Next Steps  
+                            Did the rep:  
+                                • Set follow-up expectations  
+                                • Ask if the customer needs anything else  
+                                • Thank the customer for choosing Travers  
+                                • Close the call professionally  
 
                         Transcription:
-                        {transcription}
+                        {{transcription}}
                     """}
                 ],
                 temperature=0.4
