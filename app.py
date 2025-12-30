@@ -198,10 +198,18 @@ if uploaded_file is not None:
         # ===============================
         with st.spinner("Running AI Quality Evaluation..."):
             response = openai.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=[
-                    {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scoring, analysis, and coaching.If a criterion does not apply to the call, intelligently adjust scoring and note “Not Applicable.”  Be objective, concise, and professional."},
+                    {"role": "system", "content": "You are an expert call-center quality auditor. Provide structured scoring, analysis, and coaching. Your evaluation must be objective, evidence-based, and fair. Do NOT infer missing steps. Only score what is clearly supported by the transcript."},
                     {"role": "user", "content": f"""
+			    IMPORTANT SCORING RULES:
+                                • If a criterion does not apply to the call, mark it as “Not Applicable”
+				• “Not Applicable” categories must be excluded from the overall score
+				• Do NOT force improvement feedback where no issue exists
+                                • A single miss may ONLY be penalized in ONE appropriate category
+				• Every “Area for Improvement” must be supported by explicit evidence from the transcript
+				• Do NOT downgrade accuracy scores due to lack of upselling or optional sales behaviors
+
                             Evaluate this call using the following criteria (score each 1–10 unless Not Applicable).  
                             For each section, include:
                                 - Score
@@ -211,7 +219,7 @@ if uploaded_file is not None:
 
                             After evaluating all categories, include:
                                 - Overall summary
-                                - Overall score (average of applicable categories)
+                                - Overall score (average of applicable categories only)
 
                             Evaluation Criteria:
 
@@ -235,6 +243,7 @@ if uploaded_file is not None:
                                 • Verify contact name, phone, and email  
                                 • Update incorrect info (spoken updates only)  
                                 • Ask for/confirm ship-to address if needed  
+			    Only flag a miss if the transcript clearly shows verification was NOT completed.
 
                             4. Order Entry Accuracy (Items, Pricing, Flyers, Promotions)  
                             Did the rep:  
@@ -244,6 +253,7 @@ if uploaded_file is not None:
                                 • Confirm description, quantity, and price of items  
                                 • Offer substitutes/vendor availability when needed  
                                 • Offer price-break quantities  
+			    Do NOT penalize this section for lack of upselling or sales offers.
 
                             5. Accuracy & Product Knowledge  
                             Did the rep:  
@@ -251,7 +261,8 @@ if uploaded_file is not None:
                                 • Confirm ship-via  
                                 • Provide total with tax & shipping  
                                 • Provide transit time (as estimate)  
-                                • Provide OE# or offer email confirmation  
+                                • Provide OE# or offer email confirmation  						
+			    Order total omissions should NOT be scored here.
 
                             6. Empathy & Tone  
                                 Score tone, patience, warmth, empathy, and emotional intelligence.
@@ -280,12 +291,19 @@ if uploaded_file is not None:
                                 • Ask if the customer needs anything else  
                                 • Thank the customer for choosing Travers  
                                 • Close the call professionally  
+							
+			    Follow-up expectations are ONLY required if:
+				• A backorder exists
+				• A callback is promised
+				• Information is pending
+				• An issue remains unresolved
+				Do NOT penalize if no follow-up is needed.
 
                         Transcription:
                         {{transcription}}
                     """}
                 ],
-                temperature=0.4
+                temperature=0.3
             )
             analysis = response.choices[0].message.content
 
