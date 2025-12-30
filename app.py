@@ -300,7 +300,7 @@ if uploaded_file is not None:
 				Do NOT penalize if no follow-up is needed.
 
                         Transcription:
-                        {{transcription}}
+                        {transcription}
                     """}
                 ],
                 temperature=0.3
